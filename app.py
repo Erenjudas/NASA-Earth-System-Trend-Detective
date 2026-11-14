@@ -238,7 +238,8 @@ def get_all_series():
     rows = []
     for city_info in get_cities(include_antarctica=False):
         c_name = city_info["city"]
-        df, _ = get_city_data(c_name)
+        cached_series = _SERIES_CACHE.get(c_name)
+        df = cached_series[0] if cached_series else get_city_data(c_name)[0]
         ann_p = compute_annual_series(df, "precipitation").set_index("year")["value"].to_dict()
         ann_s = compute_annual_series(df, "soil_moisture").set_index("year")["value"].to_dict()
         for yr in range(1981, 2026):
@@ -259,7 +260,9 @@ def get_all_forecasts():
     forecast_file = BASE_DIR / "outputs" / "all_cities_10_year_forecasts.csv"
     if forecast_file.exists():
         import pandas as pd
-        df = pd.read_csv(forecast_file)
+        df = pd.read_csv(forecast_file).astype(object)
+        df = df.where(pd.notna(df), None)
+        df = df.replace([float("inf"), float("-inf")], None)
         return df.to_dict(orient="records")
 
     # Generate linear projection based on trends
@@ -288,6 +291,15 @@ static_dir = BASE_DIR / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
+data_dir = BASE_DIR / "data"
+if data_dir.exists():
+    app.mount("/data", StaticFiles(directory=str(data_dir)), name="data")
+
+outputs_dir = BASE_DIR / "outputs"
+if outputs_dir.exists():
+    app.mount("/outputs", StaticFiles(directory=str(outputs_dir)), name="outputs")
+
+if static_dir.exists():
     @app.get("/")
     def serve_index():
         return FileResponse(str(static_dir / "index.html"))

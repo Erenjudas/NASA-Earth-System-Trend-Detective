@@ -177,6 +177,16 @@ Windows PowerShell:
 pip install -r requirements.txt
 ```
 
+## Run the Web App Locally
+
+The FastAPI server serves both the frontend and backend API. From the project folder, start it with:
+
+```powershell
+python -m uvicorn app:app --host 127.0.0.1 --port 8000
+```
+
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser. The API documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Stop the server with `Ctrl+C`.
+
 ## Running the Project
 
 ### Run Statistical Analysis and Machine Learning Modules

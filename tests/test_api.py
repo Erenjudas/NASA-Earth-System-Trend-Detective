@@ -83,6 +83,30 @@ def test_endpoint_clusters():
     for key in ["city", "precipitation_pct_per_decade", "soil_moisture_pct_per_decade", "cluster"]:
         assert key in item
 
+def test_endpoint_forecasts_serializes_missing_values(tmp_path):
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir()
+    forecast_file = output_dir / "all_cities_10_year_forecasts.csv"
+    forecast_file.write_text(
+        "city,year,precipitation,soil_moisture\naccra,2026,1.2,\n",
+        encoding="utf-8"
+    )
+
+    with patch("app.BASE_DIR", tmp_path):
+        res = client.get("/api/forecasts")
+
+    assert res.status_code == 200
+    assert res.json() == [{
+        "city": "accra",
+        "year": 2026,
+        "precipitation": 1.2,
+        "soil_moisture": None
+    }]
+
+def test_frontend_fallback_files_are_served():
+    assert client.get("/data/cache/accra_monthly.csv").status_code == 200
+    assert client.get("/outputs/all_cities_trend_results.csv").status_code == 200
+
 def test_unknown_city_returns_404():
     res = client.get("/api/trend?city=AtlantisNonExistent&variable=precipitation")
     assert res.status_code == 404

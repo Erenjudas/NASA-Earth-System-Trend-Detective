@@ -117,7 +117,7 @@
 
   async function fetchJson(resource) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), 10000);
     try {
       const response = await fetch(new URL(routes[resource], apiBase), {
         headers: { Accept: 'application/json' },
@@ -135,6 +135,21 @@
     if (payload && Array.isArray(payload.data)) return payload.data;
     if (payload && Array.isArray(payload.results)) return payload.results;
     if (payload && Array.isArray(payload[resource])) return payload[resource];
+    // Special handling for oppositeTrends: backend returns object with keys 'precipitation' and 'soil_moisture'
+    if (resource === 'oppositeTrends' && payload && typeof payload === 'object') {
+      const flattened = [];
+      if (Array.isArray(payload.precipitation)) {
+        for (const item of payload.precipitation) {
+          flattened.push({ ...item, variable: 'precipitation' });
+        }
+      }
+      if (Array.isArray(payload.soil_moisture)) {
+        for (const item of payload.soil_moisture) {
+          flattened.push({ ...item, variable: 'soil_moisture' });
+        }
+      }
+      return flattened;
+    }
     throw new TypeError(`${resource} endpoint must return an array of records.`);
   }
 
